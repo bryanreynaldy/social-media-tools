@@ -4,10 +4,11 @@ import re
 import time
 import random
 from datetime import datetime
+import streamlit as st
 
-from config import INSTAGRAM_COOKIE
 from utils.preview import fetch_generic_preview
 
+INSTAGRAM_COOKIE = st.secrets["INSTAGRAM_COOKIE"]
 
 class InstagramScraper:
     def __init__(self, raw_cookie):
