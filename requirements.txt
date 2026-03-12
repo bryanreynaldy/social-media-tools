@@ -1,0 +1,7 @@
+streamlit
+pandas
+requests
+tqdm
+google-api-python-client
+openpyxl
+beautifulsoup4
