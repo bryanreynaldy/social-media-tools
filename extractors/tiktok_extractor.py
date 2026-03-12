@@ -4,10 +4,10 @@ import time
 import random
 import requests
 import pandas as pd
+import streamlit as st
 from datetime import datetime
 
-from config import TIKTOK_COOKIE
-
+TIKTOK_COOKIE = st.secrets["TIKTOK_COOKIE"]
 
 class Tiktok:
     DEFAULT_HEADERS = {
