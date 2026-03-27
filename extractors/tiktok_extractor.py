@@ -277,7 +277,6 @@ class Tiktok:
                 "mode": "tiktok",
             }
 
-
     def _get_aweme_id_from_url(self, url: str, cookie: str, timeout: int = 20):
         match = re.search(r'/(?:video|photo)/(\d+)', url)
         if match:
@@ -300,7 +299,7 @@ class Tiktok:
             raise RuntimeError(f"Gagal memuat URL: {e}")
 
         raise RuntimeError("Gagal menemukan aweme_id.")
-        
+
     def _normalize_comment(self, c: dict, aweme_id: str, parent_cid: str = None):
         user = (c or {}).get("user") or {}
         text = c.get("text")
