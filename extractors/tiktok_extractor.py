@@ -277,20 +277,30 @@ class Tiktok:
                 "mode": "tiktok",
             }
 
+
     def _get_aweme_id_from_url(self, url: str, cookie: str, timeout: int = 20):
+        match = re.search(r'/(?:video|photo)/(\d+)', url)
+        if match:
+            return match.group(1)
+
         url = url.replace("m.tiktok.com/", "www.tiktok.com/")
-        if "/photo/" in url and "/video/" not in url:
-            url = url.replace("/photo/", "/video/")
+        try:
+            resp = self._get_session(cookie).get(url, timeout=timeout, allow_redirects=True)
+            resp.raise_for_status()
+            
+            match_redirect = re.search(r'/(?:video|photo)/(\d+)', resp.url)
+            if match_redirect:
+                return match_redirect.group(1)
+                
+            aweme_id = self._extract_aweme_id_from_html(resp.text)
+            if aweme_id:
+                return aweme_id
+                
+        except Exception as e:
+            raise RuntimeError(f"Gagal memuat URL: {e}")
 
-        session = self._get_session(cookie)
-        resp = session.get(url, timeout=timeout, allow_redirects=True)
-        resp.raise_for_status()
-
-        aweme_id = self._extract_aweme_id_from_html(resp.text)
-        if not aweme_id:
-            raise RuntimeError("Gagal menemukan aweme_id dari halaman.")
-        return aweme_id
-
+        raise RuntimeError("Gagal menemukan aweme_id.")
+        
     def _normalize_comment(self, c: dict, aweme_id: str, parent_cid: str = None):
         user = (c or {}).get("user") or {}
         text = c.get("text")
