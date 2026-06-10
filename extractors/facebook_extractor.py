@@ -113,6 +113,11 @@ def _fetch_best_facebook_html(url):
     """
     Ambil HTML terbaik dari beberapa varian URL.
     Tetap pure requests, tidak pakai browser/Selenium.
+
+    PATCH PRODUCTION:
+    - score awal dibuat -9999, bukan -1.
+    - Tujuannya agar response login/checkpoint yang skornya negatif tetap tersimpan.
+    - Dengan begitu error production akan menampilkan requested_url/final_url/status_code.
     """
     variants = _make_url_variants(url)
 
@@ -121,7 +126,7 @@ def _fetch_best_facebook_html(url):
         "final_url": None,
         "status_code": None,
         "html": "",
-        "score": -1,
+        "score": -9999,
         "error": None,
     }
 
@@ -173,13 +178,13 @@ def _fetch_best_facebook_html(url):
                 }
 
         except Exception as e:
-            if best["score"] < 0:
+            if best["score"] == -9999:
                 best = {
                     "requested_url": v,
                     "final_url": None,
                     "status_code": None,
                     "html": "",
-                    "score": -1,
+                    "score": -9999,
                     "error": str(e),
                 }
 
@@ -472,7 +477,7 @@ def _extract_facebook_target(url):
             f"score={info.get('score')} | "
             f"error={info.get('error')}"
         )
-  
+
     # 2. Ambil URL metadata kalau ada
     og_url = _extract_og_url_from_html(html)
     canonical_url = _extract_canonical_url_from_html(html)
@@ -768,15 +773,6 @@ def extract_facebook_comments(url: str, progress_callback=None, with_preview=Fal
     if progress_callback:
         progress_callback("Finding feedback/post ID...", 10)
 
-    # ========================================================
-    # Bagian utama yang berubah:
-    # Dulu: post_id = _extract_post_id(url)
-    #       feedback_id = _convert_feedback_id(post_id)
-    #
-    # Sekarang:
-    #       cari feedback_id langsung dulu.
-    #       kalau gagal, resolver otomatis fallback ke feedback:{post_id}
-    # ========================================================
     target = _extract_facebook_target(url)
 
     post_id = target.get("post_id")
