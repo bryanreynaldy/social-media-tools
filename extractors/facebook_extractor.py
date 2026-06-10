@@ -464,8 +464,15 @@ def _extract_facebook_target(url):
     html = info.get("html") or ""
 
     if not html:
-        raise Exception(f"HTML tidak berhasil diambil. Error: {info.get('error')}")
-
+    raise Exception(
+        "HTML tidak berhasil diambil. "
+        f"requested_url={info.get('requested_url')} | "
+        f"final_url={info.get('final_url')} | "
+        f"status_code={info.get('status_code')} | "
+        f"score={info.get('score')} | "
+        f"error={info.get('error')}"
+    )
+  
     # 2. Ambil URL metadata kalau ada
     og_url = _extract_og_url_from_html(html)
     canonical_url = _extract_canonical_url_from_html(html)
