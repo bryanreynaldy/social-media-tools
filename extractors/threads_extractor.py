@@ -22,6 +22,7 @@ import re
 import json
 import time
 import asyncio
+import subprocess
 from datetime import datetime
 from http.cookies import SimpleCookie
 
@@ -398,6 +399,46 @@ async def scroll_and_expand(page, extracted, max_stale_rounds=12, progress_base=
             stale_rounds += 1
 
 
+async def launch_chromium_with_auto_install(pw, headless=True):
+    try:
+        return await pw.chromium.launch(headless=headless)
+
+    except Exception as error:
+        error_text = repr(error)
+
+        if (
+            "Executable doesn't exist" not in error_text
+            and "playwright install" not in error_text
+            and "Looks like Playwright was just installed or updated" not in error_text
+        ):
+            raise
+
+        emit_progress("Installing Playwright Chromium on server...", 18)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "playwright",
+                "install",
+                "chromium"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600
+        )
+
+        if completed.returncode != 0:
+            print("Playwright Chromium install failed.", file=sys.stderr)
+            print(completed.stdout or "", file=sys.stderr)
+            print(completed.stderr or "", file=sys.stderr)
+            raise RuntimeError("Failed to install Playwright Chromium.")
+
+        emit_progress("Chromium installed. Launching browser...", 22)
+
+        return await pw.chromium.launch(headless=headless)
+
+
 async def scrape_threads_one(start_url, cookie_header, max_pages=100, headless=True, max_stale_rounds=12, link_index=1, total_links=1):
     start_url = normalize_threads_url(start_url)
     root_code = extract_threads_code(start_url)
@@ -419,7 +460,7 @@ async def scrape_threads_one(start_url, cookie_header, max_pages=100, headless=T
     async with async_playwright() as pw:
         emit_progress("Launching browser for Threads...", 20)
 
-        browser = await pw.chromium.launch(headless=headless)
+        browser = await launch_chromium_with_auto_install(pw, headless=headless)
         context = await browser.new_context(locale="en-US")
 
         if cookie_list:
