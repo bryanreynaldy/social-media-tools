@@ -5,3 +5,6 @@ tqdm
 google-api-python-client
 openpyxl
 beautifulsoup4
+playwright
+parsel
+nested-lookup
