@@ -18,6 +18,7 @@ def download_buttons(df):
             file_name="comments.csv",
             mime="text/csv",
             use_container_width=True,
+            on_click="ignore",
         )
 
     with excel_col:
@@ -27,4 +28,5 @@ def download_buttons(df):
             file_name="comments.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
+            on_click="ignore",
         )
