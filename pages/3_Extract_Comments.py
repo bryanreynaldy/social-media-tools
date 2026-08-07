@@ -255,9 +255,16 @@ div[data-testid="stButton"] button:disabled {
 
 div[data-testid="stMetric"] {
     padding: 18px 20px;
-    border: 1px solid #e1e1e1;
+    border: 1px solid #42526a;
     border-radius: 14px;
-    background: #fafafa;
+    background: #273449;
+}
+
+div[data-testid="stMetric"] [data-testid="stMetricLabel"],
+div[data-testid="stMetric"] [data-testid="stMetricLabel"] p,
+div[data-testid="stMetric"] [data-testid="stMetricValue"],
+div[data-testid="stMetric"] [data-testid="stMetricValue"] > div {
+    color: #f8fafc !important;
 }
 
 div[data-testid="stDownloadButton"] button {
@@ -273,10 +280,6 @@ div[data-testid="stDownloadButton"] button {
         background: #f7f7f8 !important;
     }
 
-    div[data-testid="stMetric"] {
-        border-color: #343944;
-        background: #191d25;
-    }
 }
 
 @media (max-width: 900px) {
@@ -321,6 +324,73 @@ div[data-testid="stDownloadButton"] button {
 """, unsafe_allow_html=True)
 
 
+def render_extraction_results(df, preview):
+    if preview:
+        st.subheader("Post Preview")
+
+        with st.container(border=True):
+            col1, col2 = st.columns([1, 2], vertical_alignment="center")
+
+            with col1:
+                if preview.get("image"):
+                    st.image(preview["image"], use_container_width=True)
+
+            with col2:
+                author = (preview.get("author") or "").strip()
+                title = (preview.get("title") or "").strip()
+                description = (preview.get("description") or "").strip()
+                engagement = (preview.get("engagement") or "").strip()
+                mode = preview.get("mode", "default")
+
+                if author:
+                    st.markdown(f"**Author**: {author}")
+
+                if mode == "youtube":
+                    if title:
+                        st.markdown(f"**Title**: {title}")
+                    if description:
+                        st.markdown(f"**Description**: {description}")
+
+                elif mode in {"tiktok", "instagram"}:
+                    if title:
+                        st.markdown(f"**Caption**: {title}")
+
+                elif mode == "facebook":
+                    if description:
+                        st.markdown(f"**Description**: {description}")
+
+                elif mode == "threads":
+                    if title:
+                        st.markdown(f"**Post**: {title}")
+                    if description:
+                        st.markdown(f"**Description**: {description}")
+
+                else:
+                    if title:
+                        st.markdown(f"**Title / Caption**: {title}")
+                    if description and description != title:
+                        st.markdown(f"**Description**: {description}")
+
+                if engagement:
+                    st.markdown(f"**Engagement**: {engagement}")
+
+    reply_count = len(df[df["type"] == "reply"]) if "type" in df.columns else 0
+    parent_count = len(df[df["type"] == "parent"]) if "type" in df.columns else len(df)
+
+    st.success(f"Extraction complete — {len(df)} comments found.")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Comments", len(df))
+    col2.metric("Parent Comments", parent_count)
+    col3.metric("Replies", reply_count)
+
+    st.subheader("Preview")
+    st.dataframe(df.head(15), use_container_width=True)
+
+    st.subheader("Download")
+    download_buttons(df)
+
+
 youtube_option = platform_label(youtube_logo, "YouTube")
 tiktok_option = platform_label(tiktok_logo, "TikTok")
 instagram_option = platform_label(instagram_logo, "Instagram")
@@ -340,10 +410,23 @@ platform = st.radio(
     horizontal=True
 )
 
+platform_name = next(
+    name
+    for name in ["YouTube", "TikTok", "Instagram", "Facebook", "Threads"]
+    if name in platform
+)
+
 url = st.text_input(
     "Post / Video Link",
     placeholder="Paste a public post or video link",
 )
+
+stored_result = st.session_state.get("extraction_result")
+if stored_result and (
+    stored_result["url"] != url.strip()
+    or stored_result["platform"] != platform_name
+):
+    st.session_state.pop("extraction_result", None)
 
 extract_clicked = st.button("Extract Comments", use_container_width=True)
 
@@ -406,76 +489,21 @@ if extract_clicked:
 
         loader.update("Done", 100)
         loader.done()
-
-        if preview:
-            st.subheader("Post Preview")
-
-            with st.container(border=True):
-                col1, col2 = st.columns([1, 2], vertical_alignment="center")
-
-                with col1:
-                    if preview.get("image"):
-                        st.image(preview["image"], use_container_width=True)
-
-                with col2:
-                    author = (preview.get("author") or "").strip()
-                    title = (preview.get("title") or "").strip()
-                    description = (preview.get("description") or "").strip()
-                    engagement = (preview.get("engagement") or "").strip()
-                    mode = preview.get("mode", "default")
-
-                    if author:
-                        st.markdown(f"**Author**: {author}")
-
-                    if mode == "youtube":
-                        if title:
-                            st.markdown(f"**Title**: {title}")
-                        if description:
-                            st.markdown(f"**Description**: {description}")
-
-                    elif mode == "tiktok":
-                        if title:
-                            st.markdown(f"**Caption**: {title}")
-
-                    elif mode == "instagram":
-                        if title:
-                            st.markdown(f"**Caption**: {title}")
-
-                    elif mode == "facebook":
-                        if description:
-                            st.markdown(f"**Description**: {description}")
-
-                    elif mode == "threads":
-                        if title:
-                            st.markdown(f"**Post**: {title}")
-                        if description:
-                            st.markdown(f"**Description**: {description}")
-
-                    else:
-                        if title:
-                            st.markdown(f"**Title / Caption**: {title}")
-                        if description and description != title:
-                            st.markdown(f"**Description**: {description}")
-
-                    if engagement:
-                        st.markdown(f"**Engagement**: {engagement}")
-
-        reply_count = len(df[df["type"] == "reply"]) if "type" in df.columns else 0
-        parent_count = len(df[df["type"] == "parent"]) if "type" in df.columns else len(df)
-
-        st.success(f"Extraction complete — {len(df)} comments found.")
-
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Comments", len(df))
-        col2.metric("Parent Comments", parent_count)
-        col3.metric("Replies", reply_count)
-
-        st.subheader("Preview")
-        st.dataframe(df.head(15), use_container_width=True)
-
-        st.subheader("Download")
-        download_buttons(df)
+        st.session_state["extraction_result"] = {
+            "url": url.strip(),
+            "platform": platform_name,
+            "df": df,
+            "preview": preview,
+        }
 
     except Exception as e:
         loader.done()
         st.error(f"Error: {e}")
+
+
+stored_result = st.session_state.get("extraction_result")
+if stored_result:
+    render_extraction_results(
+        stored_result["df"],
+        stored_result["preview"],
+    )
