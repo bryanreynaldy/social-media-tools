@@ -8,3 +8,4 @@ beautifulsoup4
 playwright
 parsel
 nested-lookup
+altair
