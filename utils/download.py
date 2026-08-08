@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 
-def download_buttons(df):
+def download_buttons(df, file_name="comments"):
     csv = df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
 
     output = BytesIO()
@@ -15,7 +15,7 @@ def download_buttons(df):
         st.download_button(
             label="Download CSV",
             data=csv,
-            file_name="comments.csv",
+            file_name=f"{file_name}.csv",
             mime="text/csv",
             use_container_width=True,
             on_click="ignore",
@@ -25,7 +25,7 @@ def download_buttons(df):
         st.download_button(
             label="Download Excel",
             data=output.getvalue(),
-            file_name="comments.xlsx",
+            file_name=f"{file_name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
             on_click="ignore",
