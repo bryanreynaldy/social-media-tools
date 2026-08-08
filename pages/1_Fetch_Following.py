@@ -1,13 +1,14 @@
 import base64
+from io import BytesIO
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 from extractors.instagram_following_extractor import (
     extract_instagram_following,
     normalize_username,
 )
-from utils.download import download_buttons
 from utils.loading import Loader
 
 
@@ -173,7 +174,37 @@ def render_results(df, username: str):
     )
 
     st.subheader("Download")
-    download_buttons(df, file_name=f"{username}_following")
+    following_download_buttons(df, username)
+
+
+def following_download_buttons(df, username: str):
+    file_name = f"{username}_following"
+    csv_data = df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+
+    excel_data = BytesIO()
+    with pd.ExcelWriter(excel_data, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+
+    csv_col, excel_col = st.columns(2)
+    with csv_col:
+        st.download_button(
+            "Download CSV",
+            data=csv_data,
+            file_name=f"{file_name}.csv",
+            mime="text/csv",
+            use_container_width=True,
+            on_click="ignore",
+        )
+
+    with excel_col:
+        st.download_button(
+            "Download Excel",
+            data=excel_data.getvalue(),
+            file_name=f"{file_name}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            on_click="ignore",
+        )
 
 
 logo_html = f'<img src="{instagram_logo}" alt="Instagram">' if instagram_logo else ""
